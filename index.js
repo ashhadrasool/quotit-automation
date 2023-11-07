@@ -6,7 +6,14 @@ async function selectZipCodeCountyAndPlan(page, applicant, countySelection, plan
 
     await page.type('#zipCode', applicant.zipcode);
 
-    await new Promise((resolve)=>setTimeout(resolve, 2000));
+    const expectedResponseUrl = 'https://www.quotit.net/eproIFP/county.asp';
+    await page.waitForResponse((response) => {
+        return response.url().startsWith(expectedResponseUrl);
+    });
+
+    await page.waitForSelector('select[name="countyID"]');
+
+    await new Promise((resolve)=> setTimeout(resolve, 1000));
 
     await page.evaluate((countySelection) => {
         const select = document.querySelector('select[name="countyID"]');
@@ -35,38 +42,6 @@ async function selectZipCodeCountyAndPlan(page, applicant, countySelection, plan
         zipcode:'77494',
         comments: 'This is a comment'
     }
-    const coveredMembers = [
-        {
-            firstName : "ChildOne",
-            relationship: "Child",
-            gender: "M",
-            dob: "01/01/2012",
-            zipCode: "90048"
-        },
-        {
-            firstName : "ChildTwo",
-            relationship: "Child",
-            gender: "M",
-            dob: "01/01/2012",
-            zipCode: "90048"
-        },
-        {
-            firstName : "ChildThree",
-            relationship: "Child",
-            gender: "M",
-            dob: "01/01/2012",
-            tobaccoDate: "02/02/2021",
-            zipCode: "90048"
-        },
-        {
-            firstName : "ChildFour",
-            relationship: "Child",
-            gender: "M",
-            dob: "01/01/2012",
-            tobaccoDate: "02/02/2021",
-            zipCode: "90048"
-        }
-    ];
 
     const membersInHouse = 5;
     const householdIncome = 60000;
@@ -85,15 +60,51 @@ async function selectZipCodeCountyAndPlan(page, applicant, countySelection, plan
     const planTypeSelection = planTypes[1];
     const countySelection = stateCountyList.countyOptions[1];
     //range on site is: 1-10
-    await selectZipCodeCountyAndPlan(page, applicant, countySelection, planTypeSelection, coveredMembers, membersInHouse, householdIncome);
+    await selectZipCodeCountyAndPlan(page, applicant, countySelection, planTypeSelection);
 
     const productTypes = await getProductTypes(page);
 
     const productTypeSelection = productTypes[1];
 
+    const coveredMembers = [
+        {
+            firstName : "ChildOne",
+            relationship: "Child",
+            gender: "M",
+            dob: "01/01/2012",
+            zipCode: "77494",
+            county: stateCountyList.countyOptions[1]
+        },
+        {
+            firstName : "ChildTwo",
+            relationship: "Child",
+            gender: "M",
+            dob: "01/01/2012",
+            zipCode: "77494"
+        },
+        {
+            firstName : "ChildThree",
+            relationship: "Child",
+            gender: "M",
+            dob: "01/01/2012",
+            tobaccoDate: "02/02/2021",
+            zipCode: "77494"
+        },
+        {
+            firstName : "ChildFour",
+            relationship: "Child",
+            gender: "M",
+            dob: "01/01/2012",
+            tobaccoDate: "02/02/2021",
+            zipCode: "77494"
+        }
+    ];
+
     await setDependents(page, applicant, productTypeSelection, coveredMembers, membersInHouse, householdIncome);
 
-    await scrapeHTML();
+    const results = await scrapePlanListingPage(page);
+
+    await browser.close();
 })();
 
 async function getPlanType(page){
@@ -205,15 +216,6 @@ async function setDependents(page, applicant, productTypeSelection, coveredMembe
 
     const iframe = await iframeHandle.contentFrame();
 
-    await iframe.type('#applicantFirstName', applicant.firstName);
-    await iframe.type('#applicantLastName', applicant.lastName);
-    await iframe.type('#applicantEmail', applicant.email);
-    await iframe.type('#applicantPhone', applicant.phone);
-    await iframe.type('#applicantState', applicant.state);
-    await iframe.type('#applicantCity', applicant.city);
-    await iframe.type('#applicantStreetAddress', applicant.streetAddress);
-    await iframe.type('#applicantComments', applicant.comments);
-
     await iframe.click(`input[type="radio"][value="${productTypeSelection.value}"]`);
 
     let dependentRows = 3;
@@ -248,13 +250,15 @@ async function setDependents(page, applicant, productTypeSelection, coveredMembe
                 const zipCodeInput = row.querySelector(`input[id="txtCensusZipCode-${index}"]`);
                 zipCodeInput.value = data.zipCode;
 
+                if(data.county){
+                    const countySelect = row.querySelector(`select[name="ApplicantCountySelect"]`);
+                    countySelect.value = data.county.value;
+                }
+
                 if(data.tobaccoDate){
                     const zipCodeInput = row.querySelector(`input[name="txtTime"]`);
                     zipCodeInput.value = data.tobaccoDate;
                 }
-
-                // const relationshipInput = row.querySelector(`input[type="hidden"]`);
-                // relationshipInput.value = data.relationship;
             }
         }
     }, coveredMembers);
@@ -269,46 +273,41 @@ async function setDependents(page, applicant, productTypeSelection, coveredMembe
         householdIncomeInput.value = householdIncome;
     }, householdIncome);
 
+    const buttonSelector = 'a.btn.float-right';
     await iframe.waitForSelector(buttonSelector);
     await iframe.click(buttonSelector);
 
+    await page.waitForNavigation();
 }
-async function scrapeHTML(page){
-
-    await page.goto('https://www.quotit.net/quotit/apps/epro/EproReportSCL01/IndexSCL01?bSubmitted=0&covTypeID=C&report=IFPReport3&infoEntryLayout=4&brokerID=250242&license_no=M5S66R&wordOfTheDay=mesomorph&owner=quotit&planTypeID=%25&zipCode=90048&doPlanFinder=0&selectedPeriodID=1%2f1%2f2024&countyID=11775&h_MemberId=%2c%2c%2c%2c&tcountyID=11775%2c11775%2c11775%2c11775%2c11775&householdSize=5&insuranceTypeIDRadio=5&effectiveStartDateSM=%2c&effectiveEndDate=%2c&hsmpaymentOption=M&effectiveDate=1%2f1%2f2024&txtAct=Dickerson+Insurance+Services&familyID=51812470&insuranceTypeID=5&familyIDHash=254577666');
-
+async function scrapePlanListingPage(page){
     try {
         const results = await page.evaluate(() => {
             const results = [];
-            const plans = document.querySelectorAll(['[class="plan-item scPlan-item"]']);
+            const plans = document.querySelectorAll(['div[class="plan-item"]']);
 
             console.log(plans.length);
 
             for(const plan of plans){
 
-                const planName =  plan.querySelector('.scPlan-name').textContent.trim();
-                const planRating =  plan.querySelector('div[class="row bottom-top-bordered plan-network"]').textContent.trim();
-                const premium = plan.querySelector('span[class="premium ahs-accent-coral"]').textContent.trim();
+                const planName =  plan.querySelector('div[class="plan-name"]').textContent.trim();
+                const planTierBadge =  plan.querySelector('div[class="plan-tier-badge"]').textContent.trim();
+                const planTypeBadge =  plan.querySelector('div[class="plan-type-badge"]').textContent.trim();
+                const premium = plan.querySelector('span[class="premium"]').textContent.trim();
 
-                const scrappedPlan = {'Plan Name': planName, 'Plan Rating': planRating, 'Premium': premium};
-
-                const descriptionElements = document.querySelectorAll('.label.Benefit-description');
+                const scrappedPlan = {'Plan Name': planName, 'Plan Tier Badge': planTierBadge, 'Plan Type Badge': planTypeBadge, 'Premium': premium};
+                const descriptionElements = plan.querySelectorAll('span[class="label Benefit-description"]');
                 descriptionElements.forEach(descriptionElement => {
-                    const description = descriptionElement.textContent.trim();
+                    const description = descriptionElement?.textContent.trim();
                     const valueElement = descriptionElement.nextElementSibling;
-                    const value = valueElement.textContent.trim();
+                    const value = valueElement?.textContent.trim();
                     scrappedPlan[description] = value;
-                    // pairs.push({ key: description, value });
                 });
-
                 results.push(scrappedPlan);
             }
             return results;
         });
-        console.log(results);
+        return results;
     }catch (e){
         console.log(e);
     }
-
-    await browser.close();
 }
