@@ -289,12 +289,13 @@ async function scrapePlanListingPage(page){
 
             for(const plan of plans){
 
+                const planID =  plan.querySelector('[class="p_planID"]')?.textContent.trim();
                 const planName =  plan.querySelector('div[class="plan-name"]').textContent.trim();
                 const planTierBadge =  plan.querySelector('div[class="plan-tier-badge"]').textContent.trim();
                 const planTypeBadge =  plan.querySelector('div[class="plan-type-badge"]').textContent.trim();
                 const premium = plan.querySelector('span[class="premium"]').textContent.trim();
 
-                const scrappedPlan = {'Plan Name': planName, 'Plan Tier Badge': planTierBadge, 'Plan Type Badge': planTypeBadge, 'Premium': premium};
+                const scrappedPlan = {'Plan ID': planID, 'Plan Name': planName, 'Plan Tier Badge': planTierBadge, 'Plan Type Badge': planTypeBadge, 'Premium': premium};
                 const descriptionElements = plan.querySelectorAll('span[class="label Benefit-description"]');
                 descriptionElements.forEach(descriptionElement => {
                     const description = descriptionElement?.textContent.trim();
@@ -310,4 +311,8 @@ async function scrapePlanListingPage(page){
     }catch (e){
         console.log(e);
     }
+}
+
+async function scrapePlanDetailPage(page){
+
 }
