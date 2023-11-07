@@ -51,58 +51,62 @@ async function selectZipCodeCountyAndPlan(page, applicant, countySelection, plan
     });
     const page = await browser.newPage();
 
-    await page.goto('https://www.quotit.net/eproIFP/webPages/infoEntry/InfoEntryZip.asp?license_no=5B3WWR');
+    // await page.goto('https://www.quotit.net/eproIFP/webPages/infoEntry/InfoEntryZip.asp?license_no=5B3WWR');
+    //
+    // const stateCountyList = await getCountyAndStates(page, applicant.zipcode);
+    //
+    // const planTypes = await getPlanType(page);
+    //
+    // const planTypeSelection = planTypes[1];
+    // const countySelection = stateCountyList.countyOptions[1];
+    // //range on site is: 1-10
+    // await selectZipCodeCountyAndPlan(page, applicant, countySelection, planTypeSelection);
+    //
+    // const productTypes = await getProductTypes(page);
+    //
+    // const productTypeSelection = productTypes[1];
+    //
+    // const coveredMembers = [
+    //     {
+    //         firstName : "ChildOne",
+    //         relationship: "Child",
+    //         gender: "M",
+    //         dob: "01/01/2012",
+    //         zipCode: "77494",
+    //         county: stateCountyList.countyOptions[1]
+    //     },
+    //     {
+    //         firstName : "ChildTwo",
+    //         relationship: "Child",
+    //         gender: "M",
+    //         dob: "01/01/2012",
+    //         zipCode: "77494"
+    //     },
+    //     {
+    //         firstName : "ChildThree",
+    //         relationship: "Child",
+    //         gender: "M",
+    //         dob: "01/01/2012",
+    //         tobaccoDate: "02/02/2021",
+    //         zipCode: "77494"
+    //     },
+    //     {
+    //         firstName : "ChildFour",
+    //         relationship: "Child",
+    //         gender: "M",
+    //         dob: "01/01/2012",
+    //         tobaccoDate: "02/02/2021",
+    //         zipCode: "77494"
+    //     }
+    // ];
+    //
+    // await setDependents(page, applicant, productTypeSelection, coveredMembers, membersInHouse, householdIncome);
 
-    const stateCountyList = await getCountyAndStates(page, applicant.zipcode);
-
-    const planTypes = await getPlanType(page);
-
-    const planTypeSelection = planTypes[1];
-    const countySelection = stateCountyList.countyOptions[1];
-    //range on site is: 1-10
-    await selectZipCodeCountyAndPlan(page, applicant, countySelection, planTypeSelection);
-
-    const productTypes = await getProductTypes(page);
-
-    const productTypeSelection = productTypes[1];
-
-    const coveredMembers = [
-        {
-            firstName : "ChildOne",
-            relationship: "Child",
-            gender: "M",
-            dob: "01/01/2012",
-            zipCode: "77494",
-            county: stateCountyList.countyOptions[1]
-        },
-        {
-            firstName : "ChildTwo",
-            relationship: "Child",
-            gender: "M",
-            dob: "01/01/2012",
-            zipCode: "77494"
-        },
-        {
-            firstName : "ChildThree",
-            relationship: "Child",
-            gender: "M",
-            dob: "01/01/2012",
-            tobaccoDate: "02/02/2021",
-            zipCode: "77494"
-        },
-        {
-            firstName : "ChildFour",
-            relationship: "Child",
-            gender: "M",
-            dob: "01/01/2012",
-            tobaccoDate: "02/02/2021",
-            zipCode: "77494"
-        }
-    ];
-
-    await setDependents(page, applicant, productTypeSelection, coveredMembers, membersInHouse, householdIncome);
+    await page.goto('https://www.quotit.net/quotit/apps/epro/EproReportWBE/IndexWBE?bSubmitted=0&covTypeID=C&report=IFPReport3&infoEntryLayout=4&brokerID=322908&license_no=5B3WWR&wordOfTheDay=orgasm&owner=quotit&planTypeID=%25&zipCode=77494&doPlanFinder=0&selectedPeriodID=1%2f1%2f2024&countyID=9887&h_MemberId=%2c%2c%2c%2c&householdSize=5&insuranceTypeIDRadio=5&effectiveStartDateSM=%2c&effectiveEndDate=%2c&hsmpaymentOption=M&effectiveDate=1%2f1%2f2024&txtAct=Quotit+Corporation%2c+NPN%3a18818599&familyID=51832341&insuranceTypeID=5&familyIDHash=367548287&quoteType=F');
 
     const results = await scrapePlanListingPage(page);
+
+    const planDetails = await scrapePlanDetailPage(browser, results[0]['Link Details']);
 
     await browser.close();
 })();
@@ -289,13 +293,15 @@ async function scrapePlanListingPage(page){
 
             for(const plan of plans){
 
-                const planID =  plan.querySelector('[class="p_planID"]')?.textContent.trim();
+                const planDetailsLink = plan.querySelector('[class="link"]').querySelector('a').getAttribute('href');
+
+                const planID =  plan.querySelector('[class="p_planID"]')?.getAttribute('value');
                 const planName =  plan.querySelector('div[class="plan-name"]').textContent.trim();
                 const planTierBadge =  plan.querySelector('div[class="plan-tier-badge"]').textContent.trim();
                 const planTypeBadge =  plan.querySelector('div[class="plan-type-badge"]').textContent.trim();
                 const premium = plan.querySelector('span[class="premium"]').textContent.trim();
 
-                const scrappedPlan = {'Plan ID': planID, 'Plan Name': planName, 'Plan Tier Badge': planTierBadge, 'Plan Type Badge': planTypeBadge, 'Premium': premium};
+                const scrappedPlan = {'Plan ID': planID, 'Plan Name': planName, 'Link Details': planDetailsLink, 'Plan Tier Badge': planTierBadge, 'Plan Type Badge': planTypeBadge, 'Premium': premium};
                 const descriptionElements = plan.querySelectorAll('span[class="label Benefit-description"]');
                 descriptionElements.forEach(descriptionElement => {
                     const description = descriptionElement?.textContent.trim();
@@ -313,6 +319,8 @@ async function scrapePlanListingPage(page){
     }
 }
 
-async function scrapePlanDetailPage(page){
-
+async function scrapePlanDetailPage(browser, link){
+    const page = await browser.newPage();
+    await page.goto(link);
+    page.close();
 }
