@@ -51,62 +51,67 @@ async function selectZipCodeCountyAndPlan(page, applicant, countySelection, plan
     });
     const page = await browser.newPage();
 
-    // await page.goto('https://www.quotit.net/eproIFP/webPages/infoEntry/InfoEntryZip.asp?license_no=5B3WWR');
-    //
-    // const stateCountyList = await getCountyAndStates(page, applicant.zipcode);
-    //
-    // const planTypes = await getPlanType(page);
-    //
-    // const planTypeSelection = planTypes[1];
-    // const countySelection = stateCountyList.countyOptions[1];
-    // //range on site is: 1-10
-    // await selectZipCodeCountyAndPlan(page, applicant, countySelection, planTypeSelection);
-    //
-    // const productTypes = await getProductTypes(page);
-    //
-    // const productTypeSelection = productTypes[1];
-    //
-    // const coveredMembers = [
-    //     {
-    //         firstName : "ChildOne",
-    //         relationship: "Child",
-    //         gender: "M",
-    //         dob: "01/01/2012",
-    //         zipCode: "77494",
-    //         county: stateCountyList.countyOptions[1]
-    //     },
-    //     {
-    //         firstName : "ChildTwo",
-    //         relationship: "Child",
-    //         gender: "M",
-    //         dob: "01/01/2012",
-    //         zipCode: "77494"
-    //     },
-    //     {
-    //         firstName : "ChildThree",
-    //         relationship: "Child",
-    //         gender: "M",
-    //         dob: "01/01/2012",
-    //         tobaccoDate: "02/02/2021",
-    //         zipCode: "77494"
-    //     },
-    //     {
-    //         firstName : "ChildFour",
-    //         relationship: "Child",
-    //         gender: "M",
-    //         dob: "01/01/2012",
-    //         tobaccoDate: "02/02/2021",
-    //         zipCode: "77494"
-    //     }
-    // ];
-    //
-    // await setDependents(page, applicant, productTypeSelection, coveredMembers, membersInHouse, householdIncome);
+    await page.goto('https://www.quotit.net/eproIFP/webPages/infoEntry/InfoEntryZip.asp?license_no=5B3WWR');
 
-    await page.goto('https://www.quotit.net/quotit/apps/epro/EproReportWBE/IndexWBE?bSubmitted=0&covTypeID=C&report=IFPReport3&infoEntryLayout=4&brokerID=322908&license_no=5B3WWR&wordOfTheDay=orgasm&owner=quotit&planTypeID=%25&zipCode=77494&doPlanFinder=0&selectedPeriodID=1%2f1%2f2024&countyID=9887&h_MemberId=%2c%2c%2c%2c&householdSize=5&insuranceTypeIDRadio=5&effectiveStartDateSM=%2c&effectiveEndDate=%2c&hsmpaymentOption=M&effectiveDate=1%2f1%2f2024&txtAct=Quotit+Corporation%2c+NPN%3a18818599&familyID=51832341&insuranceTypeID=5&familyIDHash=367548287&quoteType=F');
+    const stateCountyList = await getCountyAndStates(page, applicant.zipcode);
+
+    const planTypes = await getPlanType(page);
+
+    const planTypeSelection = planTypes[1];
+    const countySelection = stateCountyList.countyOptions[1];
+    //range on site is: 1-10
+    await selectZipCodeCountyAndPlan(page, applicant, countySelection, planTypeSelection);
+
+    const productTypes = await getProductTypes(page);
+
+    const productTypeSelection = productTypes[1];
+
+    const coveredMembers = [
+        {
+            firstName : "ChildOne",
+            relationship: "Child",
+            gender: "M",
+            dob: "01/01/2012",
+            zipCode: "77494",
+            county: stateCountyList.countyOptions[1]
+        },
+        {
+            firstName : "ChildTwo",
+            relationship: "Child",
+            gender: "M",
+            dob: "01/01/2012",
+            zipCode: "77494"
+        },
+        {
+            firstName : "ChildThree",
+            relationship: "Child",
+            gender: "M",
+            dob: "01/01/2012",
+            tobaccoDate: "02/02/2021",
+            zipCode: "77494"
+        },
+        {
+            firstName : "ChildFour",
+            relationship: "Child",
+            gender: "M",
+            dob: "01/01/2012",
+            tobaccoDate: "02/02/2021",
+            zipCode: "77494"
+        }
+    ];
+
+    await setDependents(page, applicant, productTypeSelection, coveredMembers, membersInHouse, householdIncome);
+
+    // debugging line DONT ENABLE
+    // await page.goto('https://www.quotit.net/quotit/apps/epro/EproReportWBE/IndexWBE?bSubmitted=0&covTypeID=C&report=IFPReport3&infoEntryLayout=4&brokerID=322908&license_no=5B3WWR&wordOfTheDay=orgasm&owner=quotit&planTypeID=%25&zipCode=77494&doPlanFinder=0&selectedPeriodID=1%2f1%2f2024&countyID=9887&h_MemberId=%2c%2c%2c%2c&householdSize=5&insuranceTypeIDRadio=5&effectiveStartDateSM=%2c&effectiveEndDate=%2c&hsmpaymentOption=M&effectiveDate=1%2f1%2f2024&txtAct=Quotit+Corporation%2c+NPN%3a18818599&familyID=51832341&insuranceTypeID=5&familyIDHash=367548287&quoteType=F');
 
     const results = await scrapePlanListingPage(page);
+    const link = results[0]['Link Details'];
 
-    const planDetails = await scrapePlanDetailPage(browser, results[0]['Link Details']);
+    // // debugging line DONT ENABLE
+    // const link = 'https://www.quotit.net/quotit/apps/Common/BenefitDetails.aspx?familyID=51832341&carrierID=62174&planID=PUF-87226TX0100011&premium=822.51&license_no=5B3WWR&brokerID=322908&insuranceTypeID=5&currPremium=&cartId=-1&periodID=301&effectiveDate=1%2f1%2f2024&baseRateUnitId=0&numberOfDays=0&type=WBE&avlViewpointID=5&srcEpro=1';
+
+    const planDetails = await scrapePlanDetailPage(browser, link);
 
     await browser.close();
 })();
@@ -322,5 +327,45 @@ async function scrapePlanListingPage(page){
 async function scrapePlanDetailPage(browser, link){
     const page = await browser.newPage();
     await page.goto(link);
+
+    // await page.waitForNavigation();
+
+    // Extract data from the "Professional Services" table
+    const planDetailsData = await page.evaluate(() => {
+        const tables = document.querySelectorAll('table');
+
+        const data = {};
+
+        tables.forEach((table) => {
+            try {
+                const tableDetails = {};
+                // const table = document.querySelector('table:has(th:contains("Professional Services"))');
+                const rows = Array.from(table.querySelectorAll('tr'));
+
+                // Define an object to store the scraped data
+                // Extract data from the rows
+                for (let i = 2; i < rows.length; i++) {
+                    const columns = rows[i].querySelectorAll('td');
+                    if (columns.length >= 3) {
+                        const serviceName = columns[0].textContent.trim();
+                        const tier1 = columns[1].textContent.trim();
+                        const network = columns[2].textContent.trim();
+                        const limits = columns[3].textContent.trim();
+                        tableDetails[serviceName] = {
+                            tier1,
+                            network,
+                            limits,
+                        };
+                    }
+                }
+                data[rows[0].textContent.trim()]=tableDetails;
+            }catch (e){
+
+            }
+        });
+        return data;
+    });
+
+    console.log(planDetailsData);
     page.close();
 }
